@@ -964,6 +964,9 @@ class PT_query_expression_body : public Parse_tree_node {
   */
   virtual bool can_absorb_order_and_limit() const = 0;
   virtual bool has_into_clause() const = 0;
+
+  /* @returns false if couldn't set, and parse error should be reported */
+  virtual bool set_into(PT_into_destination *) { return false; }
 };
 
 class PT_internal_variable_name : public Parse_tree_node {
@@ -1810,6 +1813,8 @@ class PT_window_list : public Parse_tree_node {
 class PT_query_primary : public Parse_tree_node {
  public:
   virtual bool has_into_clause() const = 0;
+  /* @returns false if couldn't set, and parse error should be reported */
+  virtual bool set_into(PT_into_destination *) { return false; }
   virtual bool is_union() const = 0;
   virtual bool can_absorb_order_and_limit() const = 0;
 };
@@ -1878,6 +1883,13 @@ class PT_query_specification : public PT_query_primary {
   bool is_union() const override { return false; }
 
   bool can_absorb_order_and_limit() const override { return true; }
+
+  bool set_into(PT_into_destination *into) override {
+    if (opt_into1 != NULL) return false;
+    opt_into1 = into;
+    return true;
+  }
+
 };
 
 class PT_query_expression final : public Parse_tree_node {
@@ -1927,6 +1939,8 @@ class PT_query_expression final : public Parse_tree_node {
   bool can_absorb_order_and_limit() const {
     return !m_body->is_union() && m_order == nullptr && m_limit == nullptr;
   }
+
+  bool set_into(PT_into_destination *into) { return m_body->set_into(into); }
 
  private:
   /**
@@ -2027,6 +2041,10 @@ class PT_query_expression_body_primary : public PT_query_expression_body {
     return m_query_primary->can_absorb_order_and_limit();
   }
 
+  bool set_into(PT_into_destination *into) override {
+    return m_query_primary->set_into(into);
+  }
+
  private:
   PT_query_primary *m_query_primary;
 };
@@ -2049,6 +2067,14 @@ class PT_union : public PT_query_expression_body {
   }
 
   bool can_absorb_order_and_limit() const override { return false; }
+
+  bool set_into(PT_into_destination *into) override {
+    /* INTO is only supported at the right-hand side.
+       Also, when parsing an union expression, and encountering
+       an into statement, the parser is already working on the
+       RHS. */
+    return m_rhs->set_into(into);
+  }
 
  private:
   PT_query_expression *m_lhs;
@@ -2078,6 +2104,10 @@ class PT_nested_query_expression : public PT_query_primary {
 
   bool can_absorb_order_and_limit() const override {
     return m_qe->can_absorb_order_and_limit();
+  }
+
+  bool set_into(PT_into_destination *into) override {
+    return m_qe->set_into(into);
   }
 
  private:

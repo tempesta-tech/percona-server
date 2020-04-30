@@ -106,6 +106,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "dict0load.h"
 #include "dict0stats_bg.h"
 #include "lock0lock.h"
+#include "log0meb.h"
 #include "os0event.h"
 #include "os0proc.h"
 #include "pars0pars.h"
@@ -3844,7 +3845,21 @@ void srv_shutdown() {
   ut_a(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS);
   ut_ad(!os_thread_any_active());
 
-  /* 5. Free all the resources acquired by InnoDB (mutexes, events, memory). */
+  ib::info(ER_IB_MSG_1155, ulonglong{shutdown_lsn});
+
+  srv_start_has_been_called = false;
+  srv_is_being_shutdown = false;
+  srv_shutdown_state.store(SRV_SHUTDOWN_NONE);
+  srv_start_state = SRV_START_STATE_NONE;
+}
+
+/* Free all the resources acquired by InnoDB (mutexes, events, memory). */
+void srv_free_resources() {
+  extern ib_mutex_t master_key_id_mutex;
+
+  if (mutex_monitor)
+    mutex_free(&master_key_id_mutex);
+
   ibt::delete_pool_manager();
 
   if (srv_monitor_file) {
@@ -3872,6 +3887,7 @@ void srv_shutdown() {
   if (!srv_read_only_mode && srv_scrub_log) {
     os_event_destroy(log_scrub_event);
   }
+  buf_parallel_dblwr_finish_recovery();
   recv_sys_close();
   trx_sys_close();
   lock_sys_close();
@@ -3892,6 +3908,7 @@ void srv_shutdown() {
   pars_close();
 
   pars_lexer_close();
+  buf_flush_free_flush_rbt();
   buf_pool_free_all();
 
   clone_free();
@@ -3899,15 +3916,10 @@ void srv_shutdown() {
 
   os_thread_close();
 
+  meb::redo_log_archive_deinit();
+
   /* 6. Free the synchronisation infrastructure. */
   sync_check_close();
-
-  ib::info(ER_IB_MSG_1155, ulonglong{shutdown_lsn});
-
-  srv_start_has_been_called = false;
-  srv_is_being_shutdown = false;
-  srv_shutdown_state.store(SRV_SHUTDOWN_NONE);
-  srv_start_state = SRV_START_STATE_NONE;
 }
 
 void srv_get_encryption_data_filename(dict_table_t *table, char *filename,
@@ -3936,6 +3948,7 @@ void srv_fatal_error() {
   ut_d(innodb_calling_exit = true);
 
   srv_shutdown_all_bg_threads();
+  srv_free_resources();
 
   flush_error_log_messages();
 

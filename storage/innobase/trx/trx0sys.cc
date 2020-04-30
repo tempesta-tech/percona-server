@@ -577,7 +577,8 @@ void trx_sys_create_sys_pages(void) {
 /*********************************************************************
 Shutdown/Close the transaction system. */
 void trx_sys_close(void) {
-  ut_ad(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS);
+  ut_ad(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS ||
+        srv_shutdown_state.load() == SRV_SHUTDOWN_NONE);
 
   if (trx_sys == NULL) {
     return;
@@ -591,8 +592,10 @@ void trx_sys_close(void) {
                               << size << " read views open";
   }
 
-  sess_close(trx_dummy_sess);
-  trx_dummy_sess = NULL;
+  if (trx_dummy_sess) {
+    sess_close(trx_dummy_sess);
+    trx_dummy_sess = NULL;
+  }
 
   trx_purge_sys_close();
 

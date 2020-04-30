@@ -301,6 +301,8 @@ static void btr_search_disable_ref_count(dict_table_t *table) {
 void btr_search_disable(bool need_mutex) {
   dict_table_t *table;
 
+  if (!dict_sys) return;
+
   if (need_mutex) {
     mutex_enter(&dict_sys->mutex);
   }

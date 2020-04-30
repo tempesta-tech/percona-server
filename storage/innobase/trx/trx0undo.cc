@@ -1888,7 +1888,8 @@ void trx_undo_insert_cleanup(trx_undo_ptr_t *undo_ptr, bool noredo) {
 /** At shutdown, frees the undo logs of a PREPARED transaction. */
 void trx_undo_free_prepared(trx_t *trx) /*!< in/out: PREPARED transaction */
 {
-  ut_ad(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS);
+  ut_ad(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS ||
+        srv_shutdown_state.load() == SRV_SHUTDOWN_NONE);
 
   if (trx->rsegs.m_redo.update_undo) {
     ut_a(trx->rsegs.m_redo.update_undo->state == TRX_UNDO_PREPARED);

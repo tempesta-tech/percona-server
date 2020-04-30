@@ -2752,6 +2752,7 @@ bool log_read_encryption() {
   if (memcmp(log_block_buf + LOG_HEADER_CREATOR_END, ENCRYPTION_KEY_MAGIC_RK_V1,
              ENCRYPTION_MAGIC_SIZE) == 0) {
     // can only happen during the upgrade
+    ut_free(log_block_buf_ptr);
     ib::error(ER_REDO_ENCRYPTION_CANT_UPGRADE_OLD_VERSION);
     return false;
   }
@@ -2811,6 +2812,7 @@ bool log_read_encryption() {
             : static_cast<redo_log_encrypt_enum>(srv_redo_log_encrypt);
     if (existing_redo_encryption_mode != set_encryption &&
         srv_redo_log_encrypt != REDO_LOG_ENCRYPT_OFF) {
+      ut_free(log_block_buf_ptr);
       ib::error(ER_REDO_ENCRYPTION_CANT_BE_CHANGED,
                 log_encrypt_name(existing_redo_encryption_mode),
                 log_encrypt_name(

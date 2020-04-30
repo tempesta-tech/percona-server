@@ -120,6 +120,9 @@ void srv_pre_dd_shutdown();
 /** Shut down the InnoDB database. */
 void srv_shutdown();
 
+/** Free all the resources acquired by InnoDB (mutexes, events, memory). **/
+void srv_free_resources();
+
 /** Shut down all InnoDB background threads. */
 void srv_shutdown_all_bg_threads();
 

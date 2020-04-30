@@ -81,7 +81,8 @@ Tablespace::~Tablespace() {
 
   close();
 
-  ut_ad(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS);
+  ut_ad(srv_shutdown_state.load() == SRV_SHUTDOWN_EXIT_THREADS ||
+        srv_shutdown_state.load() == SRV_SHUTDOWN_NONE);
   bool file_pre_exists = false;
   bool success = os_file_delete_if_exists(innodb_temp_file_key, path().c_str(),
                                           &file_pre_exists);

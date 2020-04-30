@@ -1631,7 +1631,6 @@ static int innodb_shutdown(handlerton *, ha_panic_function) {
     innobase_sys_files.clear();
     innobase_sys_files.shrink_to_fit();
 
-    mutex_free(&master_key_id_mutex);
     srv_shutdown();
     innodb_space_shutdown();
 
@@ -1643,6 +1642,8 @@ static int innodb_shutdown(handlerton *, ha_panic_function) {
 
     os_event_global_destroy();
   }
+
+  srv_free_resources();
 
   return 0;
 }

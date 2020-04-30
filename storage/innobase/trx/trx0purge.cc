@@ -256,6 +256,8 @@ void trx_purge_sys_create(ulint n_purge_threads, purge_pq_t *purge_queue) {
 /************************************************************************
 Frees the global purge system control structure. */
 void trx_purge_sys_close(void) {
+  if (!purge_sys) return;
+
   for (que_thr_t *thr = UT_LIST_GET_FIRST(purge_sys->query->thrs);
        thr != nullptr; thr = UT_LIST_GET_NEXT(thrs, thr)) {
     if (thr->prebuilt != nullptr && thr->prebuilt->compress_heap != nullptr) {

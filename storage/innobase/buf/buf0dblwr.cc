@@ -656,6 +656,8 @@ void buf_parallel_dblwr_delete() noexcept {
 /** Release any unused parallel doublewrite pages and free their underlying
 buffer at the end of crash recovery */
 void buf_parallel_dblwr_finish_recovery() noexcept {
+  if (!recv_sys) return;
+
   recv_sys->dblwr.pages.clear();
   ut_free(parallel_dblwr_buf.recovery_buf_unaligned);
   parallel_dblwr_buf.recovery_buf_unaligned = nullptr;
@@ -864,6 +866,8 @@ void buf_dblwr_recover_pages(fil_space_t *space) {
 
 /** Frees doublewrite buffer. */
 void buf_dblwr_free(void) {
+  if (!buf_dblwr) return;
+
   /* Free the double write data structures. */
   ut_ad(buf_dblwr->s_reserved == 0);
 

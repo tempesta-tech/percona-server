@@ -962,6 +962,8 @@ void
 buf_dblwr_free(void)
 /*================*/
 {
+	if (!buf_dblwr) return;
+
 	/* Free the double write data structures. */
 	ut_a(buf_dblwr != NULL);
 	ut_ad(buf_dblwr->s_reserved == 0);

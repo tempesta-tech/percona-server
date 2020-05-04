@@ -1174,6 +1174,8 @@ void
 srv_free(void)
 /*==========*/
 {
+	if (!srv_sys) return;
+
 	mutex_free(&srv_innodb_monitor_mutex);
 	mutex_free(&page_zip_stat_per_index_mutex);
 
@@ -3501,7 +3503,10 @@ srv_fatal_error()
 
 	ut_d(innodb_calling_exit = true);
 
+	srv_fast_shutdown = 2;
+
 	srv_shutdown_all_bg_threads();
+	srv_free_resources();
 
 	exit(3);
 }

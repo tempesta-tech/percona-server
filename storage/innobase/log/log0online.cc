@@ -814,6 +814,10 @@ log_online_read_shutdown(void)
 void
 log_online_shutdown(void)
 {
+	/* log_online_init() is called after buf_pool_init(), and if
+	 * buf_pool_ptr != nullptr, then log_bmp_sys_mutex was created */
+	if (!buf_pool_ptr) return;
+
 	mutex_free(&log_bmp_sys_mutex);
 }
 

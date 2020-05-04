@@ -310,7 +310,7 @@ int main(int argc, char* const argv[] )
       ld_preload.append(asan_library_name);
       ld_preload.append(":");
     }
-    ld_preload.append("/lib64/libtirpc.so");
+    ld_preload.append(tirpc_library_name);
     putenv(strdup(ld_preload.c_str()));
 #endif
     if (execvp(child_argv[0], child_argv) < 0)

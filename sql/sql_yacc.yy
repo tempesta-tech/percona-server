@@ -5515,12 +5515,12 @@ sub_part_field_item:
 part_func_expr:
           bit_expr
           {
+            LEX *lex= Lex;
+            lex->safe_to_cache_query = true;
             ITEMIZE($1, &$1);
 
-            LEX *lex= Lex;
             bool not_corr_func;
             not_corr_func= !lex->safe_to_cache_query;
-            lex->safe_to_cache_query= 1;
             if (not_corr_func)
             {
               my_syntax_error(ER(ER_WRONG_EXPR_IN_PARTITION_FUNC_ERROR));
@@ -5808,9 +5808,10 @@ part_value_expr_item:
           }
         | bit_expr
           {
+            LEX *lex= Lex;
+            lex->safe_to_cache_query = true;
             ITEMIZE($1, &$1);
 
-            LEX *lex= Lex;
             partition_info *part_info= lex->part_info;
             Item *part_expr= $1;
 

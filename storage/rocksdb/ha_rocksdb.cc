@@ -985,21 +985,10 @@ static int rocksdb_validate_flush_log_at_trx_commit(
     THD *const thd,
     struct SYS_VAR *const var, /* in: pointer to system variable */
     void *var_ptr,             /* out: immediate result for update function */
-    struct st_mysql_value *const value /* in: incoming value */) {
-  long long new_value;
-
-  /* value is NULL */
-  if (value->val_int(value, &new_value)) {
-    return HA_EXIT_FAILURE;
-  }
-
-  if (rocksdb_db_options->allow_mmap_writes && new_value != FLUSH_LOG_NEVER) {
-    return HA_EXIT_FAILURE;
-  }
-
-  *static_cast<uint32_t *>(var_ptr) = static_cast<uint32_t>(new_value);
-  return HA_EXIT_SUCCESS;
-}
+    struct st_mysql_value *const value /* in: incoming value */);
+static int rocksdb_check_write_disable_wal(
+    THD *const thd, struct SYS_VAR *var MY_ATTRIBUTE((__unused__)), void *save,
+    struct st_mysql_value *value);
 static void rocksdb_compact_column_family_stub(THD *const thd,
                                                struct SYS_VAR *const var,
                                                void *const var_ptr,
@@ -1855,8 +1844,9 @@ static MYSQL_SYSVAR_UINT(flush_log_at_trx_commit,
                          /* max */ FLUSH_LOG_BACKGROUND, 0);
 
 static MYSQL_THDVAR_BOOL(write_disable_wal, PLUGIN_VAR_RQCMDARG,
-                         "WriteOptions::disableWAL for RocksDB", nullptr,
-                         nullptr, rocksdb::WriteOptions().disableWAL);
+                         "WriteOptions::disableWAL for RocksDB",
+                         rocksdb_check_write_disable_wal, nullptr,
+                         rocksdb::WriteOptions().disableWAL);
 
 static MYSQL_THDVAR_BOOL(
     write_ignore_missing_column_families, PLUGIN_VAR_RQCMDARG,
@@ -3723,6 +3713,10 @@ class Rdb_transaction_impl : public Rdb_transaction {
     write_opts.sync = (rocksdb_flush_log_at_trx_commit == FLUSH_LOG_SYNC) &&
                       rdb_sync_wal_supported();
     write_opts.disableWAL = THDVAR(m_thd, write_disable_wal);
+    if (write_opts.disableWAL && write_opts.sync) {
+      write_opts.disableWAL = THDVAR(m_thd, write_disable_wal) = false;
+      LogPluginErrMsg(WARNING_LEVEL, 0, "Sync writes has to enable WAL");
+    }
     write_opts.ignore_missing_column_families =
         THDVAR(m_thd, write_ignore_missing_column_families);
 
@@ -3999,6 +3993,10 @@ class Rdb_writebatch_impl : public Rdb_transaction {
     write_opts.sync = (rocksdb_flush_log_at_trx_commit == FLUSH_LOG_SYNC) &&
                       rdb_sync_wal_supported();
     write_opts.disableWAL = THDVAR(m_thd, write_disable_wal);
+    if (write_opts.disableWAL && write_opts.sync) {
+      write_opts.disableWAL = THDVAR(m_thd, write_disable_wal) = false;
+      LogPluginErrMsg(WARNING_LEVEL, 0, "Sync writes has to enable WAL");
+    }
     write_opts.ignore_missing_column_families =
         THDVAR(m_thd, write_ignore_missing_column_families);
 
@@ -5310,6 +5308,14 @@ static int rocksdb_init_internal(void *const p) {
 
   // Validate the assumption about the size of ROCKSDB_SIZEOF_HIDDEN_PK_COLUMN.
   static_assert(sizeof(longlong) == 8, "Assuming that longlong is 8 bytes.");
+
+  if (THDVAR(nullptr, write_disable_wal) &&
+      rocksdb_flush_log_at_trx_commit == FLUSH_LOG_SYNC) {
+    LogPluginErrMsg(ERROR_LEVEL, 0,
+                    "Invalid argument: Sync writes "
+                    "(rocksdb_flush_log_at_trx_commit == 0) has to enable WAL");
+    DBUG_RETURN(HA_EXIT_FAILURE);
+  }
 
   // Lock the handlertons initialized status flag for writing
   Rdb_hton_init_state::Scoped_lock state_lock(*rdb_get_hton_init_state(), true);
@@ -14837,6 +14843,56 @@ int mysql_value_to_bool(struct st_mysql_value *value, bool *return_value) {
     return 1;
   }
 
+  return 0;
+}
+
+static int rocksdb_validate_flush_log_at_trx_commit(
+    THD *const thd,
+    struct SYS_VAR *const var, /* in: pointer to system variable */
+    void *var_ptr,             /* out: immediate result for update function */
+    struct st_mysql_value *const value /* in: incoming value */) {
+  long long new_value;
+
+  /* value is NULL */
+  if (value->val_int(value, &new_value)) {
+    return HA_EXIT_FAILURE;
+  }
+
+  if (rocksdb_db_options->allow_mmap_writes && new_value != FLUSH_LOG_NEVER) {
+    return HA_EXIT_FAILURE;
+  }
+
+  bool write_disable_wal = THDVAR(thd, write_disable_wal);
+  if (new_value == FLUSH_LOG_SYNC && write_disable_wal) {
+    my_error(
+        ER_GET_ERRMSG, MYF(0), HA_ERR_ROCKSDB_STATUS_INVALID_ARGUMENT,
+        "Invalid argument: Sync writes (rocksdb_flush_log_at_trx_commit == 0) "
+        "has to enable WAL",
+        rocksdb_hton_name);
+    return HA_EXIT_FAILURE;
+  }
+
+  *static_cast<uint32_t *>(var_ptr) = static_cast<uint32_t>(new_value);
+  return HA_EXIT_SUCCESS;
+}
+static int rocksdb_check_write_disable_wal(
+    THD *const thd, struct SYS_VAR *var MY_ATTRIBUTE((__unused__)), void *save,
+    struct st_mysql_value *value) {
+  bool new_value;
+  if (mysql_value_to_bool(value, &new_value) != 0) {
+    return 1;
+  }
+
+  if (rocksdb_flush_log_at_trx_commit == FLUSH_LOG_SYNC && new_value) {
+    my_error(
+        ER_GET_ERRMSG, MYF(0), HA_ERR_ROCKSDB_STATUS_INVALID_ARGUMENT,
+        "Invalid argument: Sync writes (rocksdb_flush_log_at_trx_commit == 0) "
+        "has to enable WAL",
+        rocksdb_hton_name);
+    return HA_EXIT_FAILURE;
+  }
+
+  *static_cast<bool *>(save) = new_value;
   return 0;
 }
 

@@ -7673,7 +7673,7 @@ static bool is_not_slave_or_master_sorts_functional_index_columns_last(
 */
 static Create_field *add_functional_index_to_create_list(
     THD *thd, Key_spec *key_spec, Alter_info *alter_info, Key_part_spec *kp,
-    uint key_part_number, HA_CREATE_INFO *create_info, int field_no) {
+    uint key_part_number, HA_CREATE_INFO *create_info) {
   // A functional index cannot be a primary key
   if (key_spec->type == KEYTYPE_PRIMARY) {
     my_error(ER_FUNCTIONAL_INDEX_PRIMARY_KEY, MYF(0));
@@ -7735,7 +7735,7 @@ static Create_field *add_functional_index_to_create_list(
     }
 
     if (pre_validate_value_generator_expr(
-            kp->get_expression(), key_spec->name.str, VGS_GENERATED_COLUMN, field_no)) {
+            kp->get_expression(), key_spec->name.str, VGS_GENERATED_COLUMN)) {
       return nullptr;
     }
 
@@ -7952,7 +7952,7 @@ bool mysql_prepare_create_table(
       }
 
       Create_field *new_create_field = add_functional_index_to_create_list(
-          thd, key, alter_info, key_part_spec, j, create_info, ++field_no);
+          thd, key, alter_info, key_part_spec, j, create_info);
       if (new_create_field == nullptr) {
         return true;
       }
@@ -7962,7 +7962,7 @@ bool mysql_prepare_create_table(
       assert(is_field_for_functional_index(new_create_field));
       if (prepare_create_field(thd, create_info, &alter_info->create_list,
                                &select_field_pos, file, new_create_field,
-                               field_no)) {
+                               ++field_no)) {
         return true;
       }
     }
@@ -14100,7 +14100,7 @@ static bool alter_column_name_default_or_visibility(
       if (alter->m_default_val_expr != nullptr &&
           pre_validate_value_generator_expr(
               alter->m_default_val_expr->expr_item, alter->name,
-              VGS_DEFAULT_EXPRESSION, -1))
+              VGS_DEFAULT_EXPRESSION))
         return true;
 
       // Default value is not permitted for generated columns

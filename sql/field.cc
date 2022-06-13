@@ -1182,7 +1182,8 @@ static enum_field_types field_types_merge_rules[FIELDTYPE_NUM][FIELDTYPE_NUM] =
          MYSQL_TYPE_STRING, MYSQL_TYPE_GEOMETRY}};
 
 bool pre_validate_value_generator_expr(Item *expression, const char *name,
-                                       Value_generator_source source) {
+                                       Value_generator_source source,
+                                       const int field_no) {
   enum error_type { ER_GENERATED_ROW, ER_NAMED_FUNCTION, MAX_ERROR };
   int error_code_map[][MAX_ERROR] = {
       // Generated column
@@ -1203,7 +1204,9 @@ bool pre_validate_value_generator_expr(Item *expression, const char *name,
 
   Check_function_as_value_generator_parameters checker_args(
       error_code_map[source][ER_NAMED_FUNCTION], source);
+  checker_args.col_index = 0;
 
+(void)field_no;
   if (expression->walk(&Item::check_function_as_value_generator,
                        enum_walk::SUBQUERY_POSTFIX,
                        pointer_cast<uchar *>(&checker_args))) {

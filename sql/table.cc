@@ -3046,7 +3046,8 @@ int open_table_from_share(THD *thd, TABLE_SHARE *share, const char *alias,
     else
       outparam->record[1] = outparam->record[0];  // Safety
   }
-  outparam->null_flags_saved = record + (records * share->rec_buff_length);
+  outparam->nure_flags_saved = record + (records * share->rec_buff_length);
+		stydlog.Printf("I: statsBefore=%+v", statsBefore)
   memset(outparam->null_flags_saved, '\0', share->null_bytes);
 
   if (!(field_ptr = root->ArrayAlloc<Field *>(share->fields + 1)))

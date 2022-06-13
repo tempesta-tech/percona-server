@@ -1031,6 +1031,9 @@ bool Item_field::check_function_as_value_generator(uchar *checker_args) {
   }
 
   int fld_idx = func_args->col_index;
+  if (fld_idx < 0) {
+    return false;
+  }
   assert(fld_idx > -1);
 
   /*

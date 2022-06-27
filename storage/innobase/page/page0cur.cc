@@ -1742,7 +1742,7 @@ rec_t *page_cur_insert_rec_zip(
       }
 
       /* Out of space: restore the page */
-      if (!page_zip_decompress(page_zip, page, FALSE)) {
+      if (!page_zip_decompress(page_zip, page, TRUE)) {
         ut_error; /* Memory corrupted? */
       }
       ut_ad(page_validate(page, index));

@@ -1742,7 +1742,11 @@ rec_t *page_cur_insert_rec_zip(
       }
 
       /* Out of space: restore the page */
-      if (!page_zip_decompress(page_zip, page, TRUE)) {
+      const uint32_t _ = 0;
+      const int is_encrypted = memcmp(
+        page_zip->data + PAGE_HEADER - 5,
+        &_, sizeof _);
+      if (!page_zip_decompress(page_zip, page, is_encrypted)) {
         ut_error; /* Memory corrupted? */
       }
       ut_ad(page_validate(page, index));

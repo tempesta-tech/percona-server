@@ -1,0 +1,20 @@
+CREATE PROCEDURE `sproc`()
+begin
+DROP TEMPORARY TABLE IF EXISTS `T1`;
+CREATE TEMPORARY TABLE `T1`(
+`C1` INT,
+KEY ( ( `C1` > 0 ) )
+);
+SELECT 1 FROM ( SELECT 1 `C2` ) `T2`;
+END|
+CALL `sproc`();
+1
+1
+CALL `sproc`();
+1
+1
+CALL `sproc`();
+1
+1
+DROP PROCEDURE `sproc`;
+DROP TEMPORARY TABLE `T1`;

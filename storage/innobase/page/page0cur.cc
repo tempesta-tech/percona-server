@@ -1742,10 +1742,8 @@ rec_t *page_cur_insert_rec_zip(
       }
 
       /* Out of space: restore the page */
-      const uint32_t _ = 0;
-      const int is_encrypted = memcmp(
-        page_zip->data + PAGE_HEADER - 5,
-        &_, sizeof _);
+      const uint32_t encryption_key_version = mach_read_from_4(page_zip->data + FIL_PAGE_ENCRYPTION_KEY_VERSION);
+      const int is_encrypted = encryption_key_version != 0;
       if (!page_zip_decompress(page_zip, page, is_encrypted)) {
         ut_error; /* Memory corrupted? */
       }

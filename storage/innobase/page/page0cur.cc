@@ -1743,7 +1743,8 @@ rec_t *page_cur_insert_rec_zip(
 
       /* Out of space: restore the page */
       const uint32_t encryption_key_version = mach_read_from_4(page_zip->data + FIL_PAGE_ENCRYPTION_KEY_VERSION);
-      const int is_encrypted = encryption_key_version != 0;
+      const uint32_t out_encryption_key_version = mach_read_from_4(page + FIL_PAGE_ENCRYPTION_KEY_VERSION);
+      const int is_encrypted = encryption_key_version != out_encryption_key_version;
       if (!page_zip_decompress(page_zip, page, is_encrypted)) {
         ut_error; /* Memory corrupted? */
       }

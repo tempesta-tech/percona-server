@@ -1742,10 +1742,13 @@ rec_t *page_cur_insert_rec_zip(
       }
 
       /* Out of space: restore the page */
-      const uint32_t encryption_key_version = mach_read_from_4(page_zip->data + FIL_PAGE_ENCRYPTION_KEY_VERSION);
-      const uint32_t out_encryption_key_version = mach_read_from_4(page + FIL_PAGE_ENCRYPTION_KEY_VERSION);
-      const int is_encrypted = encryption_key_version != out_encryption_key_version;
-      if (!page_zip_decompress(page_zip, page, is_encrypted)) {
+      const uint32_t encryption_key_version_in =
+          mach_read_from_4(page_zip->data + FIL_PAGE_ENCRYPTION_KEY_VERSION);
+      const uint32_t encryption_key_version_out =
+          mach_read_from_4(page + FIL_PAGE_ENCRYPTION_KEY_VERSION);
+      const int do_full_copy =
+          encryption_key_version_in != encryption_key_version_out;
+      if (!page_zip_decompress(page_zip, page, do_full_copy)) {
         ut_error; /* Memory corrupted? */
       }
       ut_ad(page_validate(page, index));

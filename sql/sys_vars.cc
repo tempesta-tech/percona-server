@@ -78,8 +78,9 @@
 #include "../storage/perfschema/pfs_server.h"
 #endif /* WITH_PERFSCHEMA_STORAGE_ENGINE */
 
-#define MAX_CONNECTIONS 100000
 #include "sql_show_processlist.h" // pfs_processlist_enabled
+
+#define MAX_CONNECTIONS 100000
 
 TYPELIB bool_typelib={ array_elements(bool_values)-1, "", bool_values, 0 };
 

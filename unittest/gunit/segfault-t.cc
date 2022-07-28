@@ -69,10 +69,6 @@ TEST_F(FatalSignalDeathTest, Segfault)
    gtest library instead.
   */
   MY_EXPECT_DEATH_IF_SUPPORTED(*pint= 42, "");
-#elif defined(HAVE_ASAN)
-  /* gcc 4.8.1 with '-fsanitize=address -O1' */
-  /* Newer versions of ASAN give other error message, disable it */
-  // EXPECT_DEATH_IF_SUPPORTED(*pint= 42, ".*ASAN:SIGSEGV.*");
 #elif defined(__APPLE__) && defined(__aarch64__) && defined(NDEBUG)
   // Disable also in non-debug mode on MacOS 11 arm, with -O1 or above, we get
   // Result: died but not with expected error.

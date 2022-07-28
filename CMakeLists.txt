@@ -356,43 +356,6 @@ OPTION(WITH_AUTHENTICATION_LDAP
 OPTION(FORCE_UNSUPPORTED_COMPILER "Disable compiler version checks" OFF)
 MARK_AS_ADVANCED(WITHOUT_SERVER DISABLE_SHARED FORCE_UNSUPPORTED_COMPILER)
 
-
-include(CheckCSourceCompiles)
-include(CheckCXXSourceCompiles)
-# We need some extra FAIL_REGEX patterns
-# Note that CHECK_C_SOURCE_COMPILES is a misnomer, it will also link.
-MACRO (MY_CHECK_C_COMPILER_FLAG FLAG RESULT)
-  SET(SAVE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${FLAG}")
-  CHECK_C_SOURCE_COMPILES("int main(void) { return 0; }" ${RESULT}
-    FAIL_REGEX "argument unused during compilation"
-    FAIL_REGEX "unsupported .*option"
-    FAIL_REGEX "unknown .*option"
-    FAIL_REGEX "unrecognized .*option"
-    FAIL_REGEX "ignoring unknown option"
-    FAIL_REGEX "[Ww]arning: [Oo]ption"
-    FAIL_REGEX "error: visibility"
-    FAIL_REGEX "warning: visibility"
-    )
-  SET(CMAKE_REQUIRED_FLAGS "${SAVE_CMAKE_REQUIRED_FLAGS}")
-ENDMACRO()
-
-MACRO (MY_CHECK_CXX_COMPILER_FLAG FLAG RESULT)
-  SET(SAVE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${FLAG}")
-  CHECK_CXX_SOURCE_COMPILES("int main(void) { return 0; }" ${RESULT}
-    FAIL_REGEX "argument unused during compilation"
-    FAIL_REGEX "unsupported .*option"
-    FAIL_REGEX "unknown .*option"
-    FAIL_REGEX "unrecognized .*option"
-    FAIL_REGEX "ignoring unknown option"
-    FAIL_REGEX "[Ww]arning: [Oo]ption"
-    FAIL_REGEX "error: visibility"
-    FAIL_REGEX "warning: visibility"
-    )
-  SET(CMAKE_REQUIRED_FLAGS "${SAVE_CMAKE_REQUIRED_FLAGS}")
-ENDMACRO()
-
 # Check whether a specific warning option is supported.
 # Intended use is primarily to silence warnings from third-party code.
 # If *our* code has warnings with gcc[56789] or clang[345678] the

@@ -174,6 +174,7 @@ bool all_tables_not_ok(THD *thd, TABLE_LIST *tables);
 bool some_non_temp_table_to_be_updated(THD *thd, TABLE_LIST *tables);
 
 bool lock_binlog_for_backup(THD *thd);
+
 bool execute_sqlcom_select(THD *thd, TABLE_LIST *all_tables);
 
 #endif /* SQL_PARSE_INCLUDED */

@@ -1,0 +1,44 @@
+#USE test;
+INSTALL PLUGIN keyring_file SONAME 'keyring_file.so';
+
+call mtr.add_suppression("Plugin keyring_file reported: 'File .*keyring' not found .*");
+call mtr.add_suppression("keyring_file initialization failure. Please check if the keyring_file_data points to readable keyring file or keyring file can be created in the specified location. The keyring_file will stay unusable until correct path to the keyring file gets provided");
+
+
+--echo Create tablespaces
+CREATE TABLESPACE tab02k_e ADD DATAFILE 'tab02k_e.ibd'  FILE_BLOCK_SIZE 02k ENCRYPTION='Y';
+CREATE TABLESPACE tab04k ADD DATAFILE 'tab04k.ibd'  FILE_BLOCK_SIZE 04k ENCRYPTION='N';
+CREATE TABLESPACE tab08k ADD DATAFILE 'tab08k.ibd'  FILE_BLOCK_SIZE 08k ENCRYPTION='N';
+CREATE TABLESPACE tab16k_e ADD DATAFILE 'tab16k_e.ibd'  FILE_BLOCK_SIZE 16k ENCRYPTION='Y';
+
+--echo Create Tables
+CREATE TABLE tt_1 (ipkey INT AUTO_INCREMENT,  PRIMARY KEY(ipkey), INDEX tt_1i0(ipkey ASC)  ) ENCRYPTION='Y' TABLESPACE=tab02k_e KEY_BLOCK_SIZE=2 ENGINE=INNODB ;
+
+CREATE TABLE tt_2 (ipkey INT AUTO_INCREMENT, v1 VARCHAR(14), d2 DOUBLE, mt3 MEDIUMTEXT, v4 VARCHAR(24), g5  VARCHAR(22) AS  (CONCAT(SUBSTRING(mt3,1,4),SUBSTRING(v4,1,2),SUBSTRING(mt3,1,9),SUBSTRING(v4,1,7))),  PRIMARY KEY(ipkey), INDEX tt_2i0(ipkey, v4, v1 ASC, g5 ASC, mt3(8) ASC) , INDEX tt_2i1(v4 DESC, v1 DESC) , INDEX tt_2i2(v4, g5 ASC, d2 ASC, ipkey DESC, mt3(29) DESC) , INDEX tt_2i3(v4 DESC, v1, ipkey) , INDEX tt_2i4(ipkey, v1 DESC, g5 ASC, mt3(26), v4 ASC, d2 DESC) , INDEX tt_2i5(ipkey, v1, v4 ASC, mt3(19), d2 DESC, g5)  ) ENCRYPTION='N' TABLESPACE=innodb_system ENGINE=INNODB ;
+
+CREATE TABLE tt_3 (i0 INT AUTO_INCREMENT, v1 VARCHAR(12), d2 DOUBLE, i3 INT, t4 TEXT, v5 VARCHAR(23), INDEX tt_3i0(i3, t4(30), i0 ASC) , INDEX tt_3i1(t4(6), d2 ASC, v1, v5) , INDEX tt_3i2(i0) , INDEX tt_3i3(i0, t4(2), v5, d2 ASC) , INDEX tt_3i4(v1, t4(4), v5 DESC) , INDEX tt_3i5(t4(1))  ) ENCRYPTION='N' ROW_FORMAT=COMPRESSED ENGINE=INNODB ;
+
+CREATE TABLE tt_4 (f0 FLOAT, d1 DOUBLE, c2 CHAR(23), d3 DOUBLE, i4 INT AUTO_INCREMENT, lt5 LONGTEXT COLUMN_FORMAT COMPRESSED, t6 BOOL, INDEX tt_4i0(i4 DESC) , INDEX tt_4i1(d3 ASC, f0 DESC, d1 DESC, t6 DESC, i4)  ) ENCRYPTION='Y' TABLESPACE=tab02k_e KEY_BLOCK_SIZE=2 ENGINE=INNODB ;
+
+CREATE TABLE tt_5 (i0 INT, INDEX tt_5i0(i0 DESC)  ) ENCRYPTION='N' TABLESPACE=tab04k KEY_BLOCK_SIZE=4 ENGINE=INNODB ;
+
+--echo Execute Queries
+ALTER TABLESPACE tab16k_e ENCRYPTION 'N' ;
+SET  GLOBAL default_table_encryption=ONLINE_FROM_KEYRING_TO_UNENCRYPTED ;
+SET  GLOBAL innodb_encryption_threads=1 ;
+ALTER TABLESPACE tab02k_e ENCRYPTION 'Y' ;
+SET  GLOBAL innodb_encryption_threads=0 ;
+ALTER TABLESPACE tab02k_e ENCRYPTION 'N' ;
+ALTER TABLESPACE tab16k_e ENCRYPTION 'N' ;
+ALTER TABLESPACE tab16k_e ENCRYPTION 'Y' ;
+ALTER TABLESPACE tab08k ENCRYPTION 'Y' ;
+SET  GLOBAL default_table_encryption=ON ;
+ALTER TABLESPACE tab08k ENCRYPTION 'N' ;
+SET  GLOBAL default_table_encryption=ONLINE_FROM_KEYRING_TO_UNENCRYPTED ;
+SET  GLOBAL innodb_encryption_threads=1 ;
+SET  GLOBAL innodb_encryption_threads=0 ;
+
+--echo Test cleanup
+DROP tt_1,tt_2,tt_3,tt_4,tt_5;
+DROP tablespace tab02k_e,tab04k,tab08k,tab16k_e;
+DROP DATABASE test;

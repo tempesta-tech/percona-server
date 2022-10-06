@@ -301,8 +301,7 @@ fil_space_crypt_t::fil_space_crypt_t(uint new_min_key_version, uint new_key_id,
                                                      // in constructor
     type = 0;  // TODO:Robert: This is temporary to get rid of unused variable
                // problem
-
-  if (new_encryption != FIL_ENCRYPTION_OFF && new_uuid != nullptr && strlen(new_uuid) > 0) {
+  if (new_uuid != nullptr && strlen(new_uuid) > 0) {
     memcpy(uuid, new_uuid, Encryption::SERVER_UUID_LEN);
     uuid[Encryption::SERVER_UUID_LEN] = '\0';
   } else {

@@ -1908,8 +1908,16 @@ static bool fil_crypt_space_needs_rotation(rotate_thread_t *state,
               strlen(crypt_data->uuid) == 0) ||
              (crypt_data->private_version == 3 &&
               memcmp(crypt_data->uuid, server_uuid,
-                     Encryption::SERVER_UUID_LEN) != 0)) &&
+                     Encryption::SERVER_UUID_LEN) != 0) ||
+             (key_state->key_version == 0 &&
+              crypt_data->private_version == 3 &&
+              crypt_data->min_key_version == ENCRYPTION_KEY_VERSION_NOT_ENCRYPTED &&
+              crypt_data->max_key_version == ENCRYPTION_KEY_VERSION_NOT_ENCRYPTED &&
+              memcmp(crypt_data->uuid, server_uuid,
+                     Encryption::SERVER_UUID_LEN) == 0)) &&
             is_unenc_to_enc_rotation(*crypt_data));
+
+      ut_ad(is_unenc_to_enc_rotation(*crypt_data));
 
       crypt_data->key_found =
           Encryption::tablespace_key_exists_or_create_new_one_if_does_not_exist(
